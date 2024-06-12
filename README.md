@@ -46,6 +46,8 @@ You must score at least 10 points to unlock online mode, characters and themes.
 
 The main target is the Android platform and the web version may not work great.
 
+"Gabagus" is derived from "gabak" and "gabak" from "kabak". "kabak" means pumpkin in Turkish.
+
 There are too many things wrong in the code. Also many variable and function names are in Turkish. I didn't know these things when I did this project.
 
 At first I started this project just to learn the Defold Game Engine, but it went much further than I expected and became what it is now. It has some bugs, but I don't think I'll spend any more time to solve them. I finished this project more than a year ago. It was just sitting in my files, useless, and I thought maybe people could use it, so I'm releasing it as open source.
