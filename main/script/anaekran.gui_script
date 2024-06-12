@@ -1,0 +1,111 @@
+
+kayitci = require("main.modul.kayitci")
+
+local klasikmodbutonnode
+local chillmodbutonnode
+local onlinemodbutonnode
+local yavasnode
+local normalnode
+local hizlinode
+globalborularsilinsinmi = true
+local kayityeri = sys.get_save_file("kusculuk", "kuskaydi")
+local kayit = sys.load(kayityeri)
+local mainacildimi = false
+
+local function bizkapatiyoruz(self)
+	self.bizmikapattik = true
+	timer.delay(1, false, function() self.bizmikapattik=false end)
+end
+
+local function anamenuyedon(self)
+	msg.post("#online", "herseyikapat")
+	msg.post("#anaekran", "enable")
+	globalmenumod = true
+	--globaltema = "klasik"
+	msg.post("#klasikbaslatici", "load")
+	bizkapatiyoruz(self)
+	if tonumber(kayitci.kaydidondur("gabag")) < 1 then
+		gui.set_position(onlinemodbutonnode, vmath.vector3(-100,-100,0))
+	else
+		gui.set_position(onlinemodbutonnode, vmath.vector3(144,202,0))
+	end
+end
+
+local function onlineac()
+	msg.post("#anaekran", "disable")
+	msg.post("#online", "enable")
+	msg.post("#online", "gcoinupdate")
+	if mainacildimi == true then
+		msg.post("#online", "boruzamani")
+	end
+	msg.post("#online", "onlinetiklandi")
+end
+
+function init(self)
+	msg.post("@render:", "use_fixed_fit_projection", { near = -2, far = 5 })
+	msg.post(".", "acquire_input_focus")
+	msg.post("#online", "disable")
+
+	-- KAYIT ISLEMLERI
+	kayityeri = sys.get_save_file("kusculuk", "kuskaydi")
+	kayit = sys.load(kayityeri)
+	
+	if kayit.best == nil then
+		kayit = {best=0,gabag=0,isim="Gabakci", gcoin=0}
+		sys.save(kayityeri, kayit)
+	end
+	
+	klasikmodbutonnode = gui.get_node("klasik")
+	chillmodbutonnode = gui.get_node("chill")
+	onlinemodbutonnode = gui.get_node("online")
+	yavasnode = gui.get_node("yavas")
+	normalnode = gui.get_node("normal")
+	hizlinode = gui.get_node("hizli")
+	globalmenumod = true
+	--globaltema = "klasik"
+	globalboruayar = "normal"
+	msg.post("#klasikbaslatici", "load")
+	self.bizmikapattik = false
+
+	if tonumber(kayitci.kaydidondur("gabag")) < 1 then
+		gui.set_position(onlinemodbutonnode, vmath.vector3(-100,-100,0))
+	else
+		gui.set_position(onlinemodbutonnode, vmath.vector3(144,202,0))
+	end
+	
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id==hash("proxy_loaded") then
+		msg.post("#klasikbaslatici", "enable")
+	end
+	if message_id==hash("proxy_unloaded") then
+		if self.bizmikapattik == true then
+			msg.post("#klasikbaslatici", "load")
+		end
+	end
+	if message_id==hash("aktiflen") then
+		msg.post("#anaekran", "enable")
+		globalmenumod = true
+		--globaltema = "klasik"
+		msg.post("#klasikbaslatici", "unload")
+		bizkapatiyoruz(self)
+	elseif message_id==hash("aktiflenfromonlineoyun") then
+		anamenuyedon(self)
+		onlineac()
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed then
+		if gui.pick_node(klasikmodbutonnode, action.x, action.y) then
+			globalmenumod = false
+			msg.post("#klasikbaslatici", "unload")
+			bizkapatiyoruz(self)
+			msg.post("#anaekran", "disable")
+			mainacildimi = true
+		elseif gui.pick_node(onlinemodbutonnode, action.x, action.y) then
+			onlineac()
+		end
+	end
+end

@@ -1,0 +1,73 @@
+
+local oisdead=false
+
+local function offlineolumlen()
+	msg.post("omanager", "bengittim", {ip = "offline"})
+	sound.play("osesci#pop")
+	oisdead=true
+	particlefx.play("#pop")
+	go.delete()
+end
+
+function init(self)
+	self.acceleration = vmath.vector3(0,-1300,0)
+	self.guc = 400
+	self.velocity = vmath.vector3()
+	self.position = go.get_position()
+	msg.post(".", "acquire_input_focus")
+end
+
+function on_message(self, message_id, message, sender)
+	if not oisdead and not ingui then
+		if message.other_group==hash("ust") then
+			offlineolumlen()
+		elseif message.other_group==hash("boru") or message.other_group==hash("kenar") then
+			offlineolumlen()
+		elseif message.other_group==hash("gecit") and message.enter then
+			msg.post("omanager", "score+1")
+			if not ismuted then sound.play("osesci#moneypick") end
+		end
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed and oisdead==false then
+		if not ismuted then sound.play("osesci#wing") end
+		self.velocity.y = self.guc
+		msg.post("omanager", "zipladim", {pos=go.get_position().y})
+	end
+end
+
+function update(self, dt)
+	if not oisdead then
+		self.velocity = self.velocity + self.acceleration * dt
+		if (self.velocity.y < -365) then
+			self.velocity.y = -365
+		end
+		self.position = self.position + self.velocity * dt 
+		go.set_position(self.position)
+	end
+end
+
+function final(self)
+	msg.post(".", "release_input_focus")
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

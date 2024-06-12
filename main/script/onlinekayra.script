@@ -1,0 +1,73 @@
+
+local oisdead=false
+local oldukmutablosu = {}
+local benimip
+local randomsayi
+
+local function onlineolumlen()
+	msg.post("omanager", "bengittim", {ip = benimip})
+	sound.play("osesci#pop")
+	oldukmutablosu[benimip] = true
+	particlefx.play("#pop")
+	go.delete()
+end
+
+function on_message(self, message_id, message, sender)
+	if not ingui then --not oldukmutablosu[benimip] and not ingui then
+		if message_id ==hash("zipla") then
+			local a = tonumber(message.pos)
+			go.set_position(vmath.vector3(100, a, 0))
+			self.position = vmath.vector3(100, a, 0)
+			self.velocity.y = self.guc
+		elseif message_id == hash("al_sana_ip") then
+			benimip = message.ip
+			oldukmutablosu[benimip] = false
+		elseif globalonlinetaraf == "server" and message.other_group==hash("kenar") then
+			onlineolumlen()
+		elseif message_id == hash("die") then
+			print("onlinekus die sinyali aldi. ip:", benimip)
+			onlineolumlen()
+		elseif message_id == hash("olmelisin") then
+			print("onlinekus olmelisin sinyali aldi. ip:", benimip)
+			onlineolumlen()
+		end
+	end
+end
+
+function update(self, dt)
+	--if not oldukmutablosu[benimip] then
+		self.velocity = self.velocity + self.acceleration * dt
+		if (self.velocity.y < -365) then
+			self.velocity.y = -365 
+		end
+		self.position = self.position + self.velocity * dt 
+		go.set_position(self.position)
+	--end
+end
+
+function init(self)
+	go.set("#sprite", "tint", vmath.vector4(1, 1, 1, 0.5))
+	self.acceleration = vmath.vector3(0,-1300,0)
+	self.guc = 400
+	self.velocity = vmath.vector3()
+	self.position = go.get_position()
+	
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

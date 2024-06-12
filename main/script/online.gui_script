@@ -1,0 +1,1432 @@
+
+local druid = require("druid.druid")
+local KarakterIsimleri = require("main.modul.karakterisimleri")
+local Temalar = require("main.modul.temalar")
+local animasyonlandirici = require("main.modul.animasyonlandirici")
+local kayitci = require("main.modul.kayitci")
+local tricks = require("main.modul.tricks")
+local oyuncututucu = require("main.modul.oyuncututucu")
+--local data_list = require("druid.extended.data_list")
+
+local ownip
+local ownisim
+local directip
+local katilbuton
+local menubutonu
+local yazihedefi
+local yazihedefistring = "ownisim"
+local oynabuton
+local yaratbuton
+local timers1
+local timers2
+local timerc1
+local timerc2
+local sagbuton
+local solbuton
+local solb10
+local sagb10
+local sayitext
+
+local kayityeri = sys.get_save_file("kusculuk", "kuskaydi")
+local kayit = sys.load(kayityeri)
+
+globalonlinetaraf = ""
+globalbagliip = ""
+globalbagliisim = ""
+globalownip = ""
+globalownisim = ""
+globalport = ""
+
+local temasecimekranianimasyonda = false
+local temasecimekraniacikmi = false
+local karaktersecimekranianimasyonda = false
+local karaktersecimekraniacikmi = false
+local temasecimekraninode
+local iceriktnode
+local karaktersecimekraninode
+local ksecimnode
+local tsecimnode
+local tsecim
+
+local gcoinsayinode
+local gcoinnode
+
+local online1
+local online2
+
+local online2acik = false
+
+local bahistext
+local ka1
+local ka10
+local ka100
+local ke1
+local ke10
+local ke100
+
+local maxbahis = 500
+
+local geributon
+local serveryayintimer
+
+local idveindex = {}
+local katilmaSinyaliTimerlari = {}
+
+local umutlanilanip
+globalkatilimcininserveri = ""
+local katilimcininkendisi
+local serverinkendisi
+--local globalserverinoyunculari
+--local globalkatilimcininarkadaslari
+
+local timerlar = {}
+
+local hazirbaslabuton
+
+local randomid
+
+globalbahis = 0
+globaltoplambahis = 0
+
+
+function init(self)
+	local rs = tricks.randomseedolustur()
+	math.randomseed(rs)
+	splitmix64.randomseed(rs)
+	--druid.register("data_list", data_list)
+	self.hedefip = ""
+	globalport = 8888
+	msg.post(".", "acquire_input_focus")
+	ownip = gui.get_node("ownip")
+	ownisim = gui.get_node("ownisim")
+	directip = gui.get_node("directip")
+	katilbuton = gui.get_node("katilbuton")
+	menubutonu = gui.get_node("menubuton")
+	oynabuton = gui.get_node("oynabuton")
+	yaratbuton = gui.get_node("yaratbuton")
+	gui.set_position(oynabuton, vmath.vector3(144, -120, 0))
+	agislemleri(self)
+	self.message = ""
+	yazihedefi = ownisim
+	globalownisim = gui.get_text(ownisim)
+	self.bizmikapattik = false
+
+	sagbuton = gui.get_node("sagb")
+	solbuton = gui.get_node("solb")
+	sagb10 = gui.get_node("sagb10")
+	solb10 = gui.get_node("solb10")
+	sayitext = gui.get_node("sayitext")
+
+	-- KAYIT ISLEMLERI
+	kayityeri = sys.get_save_file("kusculuk", "kuskaydi")
+	kayit = sys.load(kayityeri)
+	if kayit.best == nil then
+		kayit = {best=0,gabag=0,isim="NAME"}
+		sys.save(kayityeri, kayit)
+	elseif not (kayit.best == nil) then
+		if kayit.isim == nil then
+			kayit = {best=kayit.best, gabag=kayit.gabag, isim="NAME"}
+			sys.save(kayityeri, kayit)
+		end
+	end
+	gui.set_text(ownisim, kayit.isim)
+
+	ksecimnode = gui.get_node("ksecimnode")
+	tsecimnode = gui.get_node("tsecimnode")
+	tsecim = gui.get_node("tsecim")
+	
+	icerikknode = gui.get_node("kdata_list_vertical_content")
+	iceriktnode = gui.get_node("tdata_list_vertical_content")
+
+	temasecimekraninode = gui.get_node("temasecimekrani")
+	gui.set_position(temasecimekraninode, vmath.vector3(-1000,170,0))
+	gui.set_enabled(temasecimekraninode, false)
+	karaktersecimekraninode = gui.get_node("karaktersecimekrani")
+	gui.set_position(karaktersecimekraninode, vmath.vector3(-1000,170,0))
+	gui.set_enabled(karaktersecimekraninode, false)
+
+	gcoinsayinode = gui.get_node("gcoinsayi")
+	gui.set_text(gcoinsayinode, kayitci.kaydidondur("gcoin"))
+
+	if tonumber(kayitci.kaydidondur("gabag")) < 1 then
+		print("yetersizsinsen")
+	else
+		gui.set_text(sayitext, math.ceil(Kayitci.ktb("b")*100))
+	end
+	
+
+	gcoinnode = gui.get_node("gcoin")
+
+	online1 = gui.get_node("online1")
+	online2 = gui.get_node("online2")
+
+	bahistext = gui.get_node("bahistext")
+	ka1 = gui.get_node("k+1")
+	ka10 = gui.get_node("k+10")
+	ka100 = gui.get_node("k+100")
+	ke1 = gui.get_node("k-1")
+	ke10 = gui.get_node("k-10")
+	ke100 = gui.get_node("k-100")
+	geributon = gui.get_node("geributon")
+
+	local deneytable = {isim="BUMBALAK",karakter="lkarakter2",gcoin=123,ip="192.168.1.1"}
+
+	hazirbaslabuton = gui.get_node("hazirbaslabuton")
+
+	-----------------------------DRUID
+
+	self.odruid = druid.new(self)
+	self.o2druid = druid.new(self)
+	-----------------------------DRUIDCI TEXT
+
+
+	-----------------------------DRUIDCI TEXT
+	
+	-----------------------------DRUIDCI KARAKTER
+
+	KarakterIsim.kontrol()
+
+	self.kdata_set = {}
+	for i = 1, KarakterIsim.sayi() do
+		table.insert(self.kdata_set, "lkarakter"..i)
+	end
+
+	self.kprefab = gui.get_node("kprefab")
+	gui.set_enabled(self.kprefab, false)
+
+
+	-- Data list initialization
+	local scroll_vertical = self.odruid:new_scroll("kdata_list_vertical", "kdata_list_vertical_content")
+	:set_horizontal_scroll(false)
+	local grid_vertical = self.odruid:new_static_grid("kdata_list_vertical_content", "kprefab", 1)
+
+	-- We pass already created scroll and grid components with create function
+	self.kdata_list_vertical = self.odruid:new_data_list(scroll_vertical, grid_vertical, okcreate_vertical_element)
+	self.kdata_list_vertical:set_data(self.kdata_set)
+	-----------------------------DRUIDCI KARAKTER
+
+	-----------------------------DRUIDCI TEMA
+
+	Temalar.kontrol()
+
+	self.tdata_set = {}
+	for i = 1, Temalar.isimsayisi() do
+		if i < 10 then
+			table.insert(self.tdata_set, "ltema0"..i)
+		else
+			table.insert(self.tdata_set, "ltema"..i)
+		end
+	end
+
+	self.tprefab = gui.get_node("tprefab")
+	gui.set_enabled(self.tprefab, false)
+
+
+	-- Data list initialization
+	local scroll_vertical = self.odruid:new_scroll("tdata_list_vertical", "tdata_list_vertical_content")
+	:set_horizontal_scroll(false)
+	local grid_vertical = self.odruid:new_static_grid("tdata_list_vertical_content", "tprefab", 1)
+
+	-- We pass already created scroll and grid components with create function
+	self.tdata_list_vertical = self.odruid:new_data_list(scroll_vertical, grid_vertical, otcreate_vertical_element)
+	self.tdata_list_vertical:set_data(self.tdata_set)
+
+	-----------------------------DRUIDCI TEMA
+
+	-----------------------------EKRAN1
+
+	self.e1data_set = {}
+	--table.insert(self.e1data_set, "deney")
+	
+
+	self.e1prefab = gui.get_node("e1prefab")
+	gui.set_enabled(self.e1prefab, false)
+
+
+	-- Data list initialization
+	local scroll_vertical = self.o2druid:new_scroll("e1data_list_vertical", "e1data_list_vertical_content")
+	:set_horizontal_scroll(false)
+	local grid_vertical = self.o2druid:new_static_grid("e1data_list_vertical_content", "e1prefab", 1)
+
+	-- We pass already created scroll and grid components with create function
+	self.e1data_list_vertical = self.o2druid:new_data_list(scroll_vertical, grid_vertical, e1create_vertical_element)
+	self.e1data_list_vertical:set_data(self.e1data_set)
+	-----------------------------EKRAN1
+	-----------------------------EKRAN2
+	
+	self.e2data_set = {}
+	--table.insert(self.e2data_set, deneytable)
+
+
+	self.e2prefab = gui.get_node("e2prefab")
+	gui.set_enabled(self.e2prefab, false)
+
+
+	-- Data list initialization
+	local scroll_vertical = self.o2druid:new_scroll("e2data_list_vertical", "e2data_list_vertical_content")
+	:set_horizontal_scroll(false)
+	local grid_vertical = self.o2druid:new_static_grid("e2data_list_vertical_content", "e2prefab", 1)
+
+	-- We pass already created scroll and grid components with create function
+	self.e2data_list_vertical = self.o2druid:new_data_list(scroll_vertical, grid_vertical, e2create_vertical_element)
+	self.e2data_list_vertical:set_data(self.e2data_set)
+	-----------------------------EKRAN2
+	
+end
+
+function e1create_vertical_element(self, data, index, data_list)
+	local instance = gui.clone_tree(self.e1prefab)
+
+	--OYUN LISTELEME { ------------
+	
+	gui.set_enabled(instance["e1prefab"], true) --GORUNUR YAP
+	gui.set_text(instance["e1prefabtexti"], data.isim) --ISIMLERINI DATADAN GETIR VE YAZ
+	gui.play_flipbook(instance["e1kafa"], data.karakter) --KAFA KISMININ FLIPBOOKUNU AYARLA
+	idveindex[data.id] = index
+	
+	--OYUN LISTELEME } ------------
+
+	local button = self.o2druid:new_button(instance["e1sectusuhe"], function()
+
+		--KATIL BUTONA BASINCA { ------------
+		
+		katilmacilik(self,data)
+		
+		--KATIL BUTONA BASINCA } ------------
+
+	end)
+	button:set_click_zone(data_list.scroll.view_node)
+
+	return instance["e1prefab"], button
+end
+
+function e2create_vertical_element(self, data, index, data_list)
+	local instance = gui.clone_tree(self.e2prefab)
+
+	--OYUNCU LISTELEME { ------------
+	
+	gui.set_enabled(instance["e2prefab"], true) --GORUNUR YAP
+	gui.set_text(instance["e2prefabtexti"], data.isim) --ISIMLERINI DATADAN GETIR VE YAZ
+	gui.play_flipbook(instance["e2kafa"], data.karakter) --KAFA KISMININ FLIPBOOKUNU AYARLA
+	gui.set_text(instance["e2sec"], data.gcoin) --GCOIN AYARLA
+	if data.hazir == true then
+		gui.set_color(instance["e2prefabtexti"], vmath.vector4(0.1,1,0.1,1))
+	end
+
+	--OYUNCU LISTELEME } ------------
+
+	return instance["e2prefab"]
+end
+
+function okcreate_vertical_element(self, data, index, data_list)
+	local instance = gui.clone_tree(self.kprefab)
+
+	--KARAKTER LISTELEME { ------------
+
+	gui.set_enabled(instance["kprefab"], true) --GORUNUR YAP
+	gui.set_text(instance["kprefabtexti"], KarakterIsimleri.getir(data)) --ISIMLERINI MODULDEN GETIR VE YAZ
+
+	if KarakterIsimleri.fiyat(data) == 0 then
+		gui.set_enabled(instance["ksec1"], false)
+		gui.set_text(instance["ksec2"], "SEC")
+		gui.set_position(instance["ksec2"], vmath.vector3(0,-1,0))
+
+	else
+		gui.set_text(instance["ksec2"], KarakterIsimleri.fiyat(data)) --FIYATLARI MODULDEN GETIR VE YAZ
+		gui.set_color(instance["ksec2"], vmath.vector4(1,1,0.5,1))
+
+		if KarakterIsimleri.fiyat(data) < 10 then --FIYATA GORE KONUM AYARLAMALARI
+			gui.set_position(instance["ksec1"], vmath.vector3(6,0,0))
+		elseif KarakterIsimleri.fiyat(data) < 100 then
+			gui.set_position(instance["ksec1"], vmath.vector3(10,0,0))
+		elseif KarakterIsimleri.fiyat(data) <= 1000 then
+			gui.set_position(instance["ksec1"], vmath.vector3(15,0,0))
+		elseif KarakterIsimleri.fiyat(data) > 1000 then
+			gui.set_position(instance["ksec1"], vmath.vector3(19,0,0))
+		end
+	end
+
+	gui.play_flipbook(instance["kkafa"], data) --KAFA KISMININ FLIPBOOKUNU AYARLA
+
+	if data == Kayitci.ktb("k") then --SECILI OLANLI SECILI GOSTER
+		gui.play_flipbook(instance["ksectusuhe"], "geneltus2gri") --SECILMIS SEC TUSUNU GRI YAP
+		kresetlenecek = instance["ksectusuhe"] --SONRADAN DUZELTMEK ICIN, GRI YAPILANI KAYDET
+		gui.play_flipbook(ksecimnode, data) --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+	end
+
+	--KARAKTER LISTELEME } ------------
+
+	local button = self.odruid:new_button(instance["ksectusuhe"], function()
+
+		--KARAKTER BUTONA BASINCA { ------------
+
+		if KarakterIsimleri.fiyat(data) == 0 then
+			if kresetlenecek and tricks.nodevarmi(kresetlenecek) then
+				gui.play_flipbook(kresetlenecek, "geneltus2")
+			end
+			gui.play_flipbook(instance["ksectusuhe"], "geneltus2gri") --TIKLANAN SEC TUSUNU GRI YAP
+			kresetlenecek = instance["ksectusuhe"] --SONRADAN DUZELTMEK ICIN, GRI YAPILANI KAYDET
+			gui.play_flipbook(ksecimnode, data) --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+			karaktersec(self,data) --SEC BUTONUNA BASILAN KARAKTERI GERCEKTEN SEC
+			Kayitci.ktb_yaz("k",data)
+		else
+			if KarakterIsimleri.fiyat(data) > tonumber(gui.get_text(gcoinsayinode)) then --PARA YETMEDI
+				animasyonlandirici.alamama(gcoinnode)
+			else --SATIN AL
+				if kresetlenecek and tricks.nodevarmi(kresetlenecek) then
+					gui.play_flipbook(kresetlenecek, "geneltus2")
+				end
+
+				gui.set_text(gcoinsayinode, tonumber(gui.get_text(gcoinsayinode)) - KarakterIsimleri.fiyat(data)) 
+				gui.set_enabled(instance["ksec1"], false)
+				gui.set_text(instance["ksec2"], "SEC")
+				gui.set_position(instance["ksec2"], vmath.vector3(0,-1,0))
+
+				gui.set_color(instance["ksec2"], vmath.vector4(1,1,1,1))
+				gui.play_flipbook(instance["ksectusuhe"], "geneltus2gri") --TIKLANAN SEC TUSUNU GRI YAP
+				kresetlenecek = instance["ksectusuhe"] --SONRADAN DUZELTMEK ICIN, GRI YAPILANI KAYDET
+				gui.play_flipbook(ksecimnode, data) --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+				karaktersec(self,data) --SEC BUTONUNA BASILAN KARAKTERI GERCEKTEN SEC
+
+				Kayitci.ktb_yaz("k",data)
+
+				KarakterIsimleri.satinal(data)
+				Kayitci.eski("gcoin",tonumber(gui.get_text(gcoinsayinode)))
+			end
+		end
+
+		--KARAKTER BUTONA BASINCA } ------------
+
+	end)
+	button:set_click_zone(data_list.scroll.view_node)
+
+	return instance["kprefab"], button
+end
+
+function otcreate_vertical_element(self, data, index, data_list)
+	local instance = gui.clone_tree(self.tprefab)
+
+	--TEMA LISTELEME { ------------
+
+
+	gui.set_enabled(instance["tprefab"], true) --GORUNUR YAP
+	gui.set_text(instance["tprefabtexti"], Temalar.isimgetir(data)) --ISIMLERINI MODULDEN GETIR VE YAZ
+
+	if Temalar.fiyat(data) == 0 then
+		gui.set_enabled(instance["tsec1"], false)
+		gui.set_text(instance["tsec2"], "SEC")
+		gui.set_position(instance["tsec2"], vmath.vector3(0,-1,0))
+	else
+		gui.set_text(instance["tsec2"], Temalar.fiyat(data)) --FIYATLARI MODULDEN GETIR VE YAZ
+		gui.set_color(instance["tsec2"], vmath.vector4(1,1,0.5,1))
+	end
+
+	gui.play_flipbook(instance["pbg1"], data.."1") --KAFA KISMININ FLIPBOOKUNU AYARLA
+	gui.play_flipbook(instance["pbg2"], data.."2")
+	gui.play_flipbook(instance["pbg3"], data.."3")
+	gui.play_flipbook(instance["pbg4"], data.."4")
+
+	if data == Kayitci.ktb("t") then
+		gui.play_flipbook(instance["tsectusuhe"], "geneltus2gri") --TIKLANAN SEC TUSUNU GRI YAP
+		tresetlenecek = instance["tsectusuhe"] --SONRADAN DUZELTMEK ICIN, GRI YAPILANI KAYDET
+
+		gui.play_flipbook(gui.get_node("bg1"), data.."1") --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+		gui.play_flipbook(gui.get_node("bg2"), data.."2")
+		gui.play_flipbook(gui.get_node("bg3"), data.."3")
+		gui.play_flipbook(gui.get_node("bg4"), data.."4")
+	end
+
+	--TEMA LISTELEME } ------------
+
+	local button = self.odruid:new_button(instance["tsectusuhe"], function()
+
+		--TEMA BUTONA BASINCA { ------------
+
+		--[[
+		if tresetlenecek then
+			gui.play_flipbook(tresetlenecek, "geneltus2")
+		end
+		gui.play_flipbook(instance["tsectusuhe"], "geneltus2gri") --TIKLANAN SEC TUSUNU GRI YAP
+		tresetlenecek = instance["tsectusuhe"]
+
+		gui.play_flipbook(gui.get_node("bg1"), data.."1") --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+		gui.play_flipbook(gui.get_node("bg2"), data.."2")
+		gui.play_flipbook(gui.get_node("bg3"), data.."3")
+		gui.play_flipbook(gui.get_node("bg4"), data.."4")
+
+		globaltema = data
+		--]]
+
+		if  Temalar.fiyat(data) == 0 then
+			if tresetlenecek and tricks.nodevarmi(tresetlenecek) then
+				gui.play_flipbook(tresetlenecek, "geneltus2")
+			end
+			gui.play_flipbook(instance["tsectusuhe"], "geneltus2gri") --TIKLANAN SEC TUSUNU GRI YAP
+			tresetlenecek = instance["tsectusuhe"] --SONRADAN DUZELTMEK ICIN, GRI YAPILANI KAYDET
+
+			gui.play_flipbook(gui.get_node("bg1"), data.."1") --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+			gui.play_flipbook(gui.get_node("bg2"), data.."2")
+			gui.play_flipbook(gui.get_node("bg3"), data.."3")
+			gui.play_flipbook(gui.get_node("bg4"), data.."4")
+
+			globaltema = data --SEC BUTONUNA BASILAN KARAKTERI GERCEKTEN SEC
+			Kayitci.ktb_yaz("t",data) -- VE KAYDET
+		else
+			if  Temalar.fiyat(data) > tonumber(gui.get_text(gcoinsayinode)) then --PARA YETMEDI
+				animasyonlandirici.alamama(gcoinnode)
+			else --SATIN AL
+				if tresetlenecek and tricks.nodevarmi(tresetlenecek) then
+					gui.play_flipbook(tresetlenecek, "geneltus2")
+				end
+
+				gui.set_text(gcoinsayinode, tonumber(gui.get_text(gcoinsayinode)) -  Temalar.fiyat(data)) 
+				gui.set_enabled(instance["tsec1"], false)
+				gui.set_text(instance["tsec2"], "SEC")
+				gui.set_position(instance["tsec2"], vmath.vector3(0,-1,0))
+
+				gui.set_color(instance["tsec2"], vmath.vector4(1,1,1,1))
+				gui.play_flipbook(instance["tsectusuhe"], "geneltus2gri") --TIKLANAN SEC TUSUNU GRI YAP
+				tresetlenecek = instance["tsectusuhe"] --SONRADAN DUZELTMEK ICIN, GRI YAPILANI KAYDET
+
+				gui.play_flipbook(gui.get_node("bg1"), data.."1") --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+				gui.play_flipbook(gui.get_node("bg2"), data.."2")
+				gui.play_flipbook(gui.get_node("bg3"), data.."3")
+				gui.play_flipbook(gui.get_node("bg4"), data.."4")
+
+				globaltema = data --SEC BUTONUNA BASILAN KARAKTERI GERCEKTEN SEC
+
+				Kayitci.ktb_yaz("t",data) --KAYDET SECILENI
+
+				Temalar.satinal(data)
+
+				Kayitci.eski("gcoin",tonumber(gui.get_text(gcoinsayinode)))
+
+			end
+		end
+
+		--TEMA BUTONA BASINCA } ------------
+
+	end)
+	button:set_click_zone(data_list.scroll.view_node)
+
+	return instance["tprefab"], button
+end
+
+function resetci(self)
+	globalonlinetaraf = ""
+	globalbagliip = ""
+	globalbagliisim = ""
+	globalownip = ""
+	globalownisim = gui.get_text(ownisim)
+	globalport = 8888
+	
+	self.hedefip = ""
+	gui.set_position(oynabuton, vmath.vector3(144, -120, 0))
+	self.message = ""
+
+	if self.ag then
+		self.ag:close()
+	end
+
+	agislemleri(self)
+
+	online2gotur()
+
+	self.e2data_set = {}
+	self.e1data_set = {}
+	self.e2data_list_vertical:set_data(self.e2data_set)
+	self.e1data_list_vertical:set_data(self.e1data_set)
+end
+
+local easingci = gui.EASING_OUTEXPO
+
+function online2getir()
+
+	if globalonlinetaraf == "server" then
+		gui.set_text(hazirbaslabuton, "PLAY")
+	elseif globalonlinetaraf == "katilimci" then
+		gui.set_text(hazirbaslabuton, "READY")
+	end
+	gui.animate(online1, gui.PROP_POSITION, vmath.vector3(-501,0,0), easingci, 0.5)
+	gui.animate(online2, gui.PROP_POSITION, vmath.vector3(-501,0,0), easingci, 0.5)
+	online2acik=true
+end
+
+function online2gotur()
+	gui.animate(online1, gui.PROP_POSITION, vmath.vector3(0,0,0), easingci, 0.5)
+	gui.animate(online2, gui.PROP_POSITION, vmath.vector3(0,0,0), easingci, 0.5)
+	online2acik=false
+	if globalonlinetaraf == "server" then
+		if serveryayintimer then timer.cancel(serveryayintimer) end
+	elseif globalonlinetaraf == "katilimci" then
+		for key, value in pairs(katilmaSinyaliTimerlari) do
+			timer.cancel(value)
+			katilmaSinyaliTimerlari[key] = nil
+		end
+	end
+	globalonlinetaraf = ""
+end
+
+function agislemleri(self)
+	-- KENDI LOCAL IP ADRESINI BUL
+	self.detayliip = sys.get_ifaddrs()
+	
+	globalownip = "WIFI ACSANA"
+	self.arayuz = "?"
+
+	for _,interface in ipairs(self.detayliip) do
+		if interface.name == "Wi-Fi" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "Wi-Fi"
+			break
+		elseif interface.name == "wi-fi" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "wi-fi"
+			break
+		elseif interface.name == "wifi" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "wifi"
+			break
+		elseif interface.name == "wifi" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "wifi"
+			break
+		elseif interface.name == "Wifi" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "Wifi"
+			break
+		elseif interface.name == "WiFi" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "WiFi"
+			break
+		elseif interface.name == "wlan0" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "wlan0"
+			break
+		elseif interface.name == "en0" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "en0"
+			break
+		elseif interface.name == "lo0" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "lo0"
+			break
+		elseif interface.name == "ap0" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "ap0"
+			break
+		elseif interface.name == "en1" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "en1"
+			break
+		elseif interface.name == "lo1" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "lo1"
+			break
+		elseif interface.name == "ap1" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "ap1"
+			break
+		elseif interface.name == "eth0" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "eth0"
+			break
+		elseif interface.name == "eth1" and interface.up == true and interface.family == "ipv4" then
+			globalownip = interface.address
+			self.arayuz = "eth1"
+			break
+		end
+	end
+
+	-- IP ADRESINI YAZDIR
+	if not (self.arayuz == "wlan0") or (self.arayuz == "lo1") then -- bilindik arayuz degilse
+		gui.set_color(ownip, vmath.vector4(1, 0.5, 0,3, 1))
+		gui.set_text(ownip, self.arayuz..": "..globalownip)
+	else
+		gui.set_text(ownip, globalownip)
+	end
+	
+	if not (globalownip == "Wifi acsana") then
+		-- UDP SOKETI OLUSTUR
+		self.ag = socket.udp()
+		-- ZAMAN ASIMINI 0 YAP
+		self.ag:settimeout(0)
+		-- YAYIN MODUNA AL
+		self.ag:setoption("broadcast", true)
+		-- IP ADRESI VE PORT BAGLANTISINI YAP
+		self.ag:setsockname(globalownip, globalport)
+	end
+end
+
+
+--[[
+function yayinisleonlinegui(self,gelenip,gelendata)
+
+	if globalonlinetaraf == "server" then
+		if string.sub(gelendata,1,20) == "gabagusclientistegi:" then
+	
+	
+	-- BIZ SERVER ISEK, GELEN CLIENT MESAJIYLA BAGLAN. CLIENT ISEK, SERVER MESAJIYLA BAGLAN.
+	if globalonlinetaraf == "server" then
+		if string.sub(gelendata,1,20) == "gabagusclientistegi:" then
+			if globalbagliip == "" then
+				local ayiklanmisisim = string.sub(gelendata,22)
+				if self.hedefip == gelenip then
+					globalbagliip = gelenip
+					globalbagliisim = ayiklanmisisim
+					self.ag:sendto("gabagusbaslaticisi: "..gui.get_text(ownisim), globalbagliip, globalport)
+					--print("istek mesajiyla basladi with: "..gelenip)
+					rengikes()
+					gui.animate(oynabuton, gui.PROP_POSITION, vmath.vector3(144, 170, 0), gui.EASING_LINEAR, 0.2)
+				end
+			end
+		end
+	elseif globalonlinetaraf == "client" then
+		if string.sub(gelendata,1,20) == "gabagusserveristegi:" then
+			if globalbagliip == "" then
+				local ayiklanmisisim = string.sub(gelendata,22)
+				if self.hedefip == gelenip then
+					globalbagliip = gelenip
+					globalbagliisim = ayiklanmisisim
+					self.ag:sendto("gabagusbaslaticisi: "..gui.get_text(ownisim), globalbagliip, globalport)
+					--print("istek mesajiyla basladi with: "..gelenip)
+					rengikes()
+					gui.animate(oynabuton, gui.PROP_POSITION, vmath.vector3(144, 170, 0), gui.EASING_LINEAR, 0.2)
+				end
+			end
+		end
+	end
+	
+	-- GELEN BASLATMA MESAJI ILE BASLA
+	if string.sub(gelendata,1,19) == "gabagusbaslaticisi:" then
+		if globalbagliip == "" then
+			globalbagliip = gelenip
+			local ayiklanmisisim = string.sub(gelendata,21)
+			globalbagliip = gelenip
+			globalbagliisim = ayiklanmisisim
+			gui.animate(oynabuton, gui.PROP_POSITION, vmath.vector3(144, 170, 0), gui.EASING_LINEAR, 0.2)
+		end
+	end
+	
+end
+--]]
+
+-- RENKLENDIRDIGI SURE BOYUNCA ISTEK GONDERIR
+function renklendir(self)
+	
+	rengikes()
+	
+	if globalonlinetaraf == "server" then
+		gui.set_color(directip, vmath.vector4(0, 1, 0, 1))
+		timers1 = timer.delay(0.5, true, function()
+			self.ag:sendto("gabagusserveristegi: "..gui.get_text(ownisim), self.hedefip, globalport)
+		end)
+		timers2 = timer.delay(5, false, function()
+			if timers1 then timer.cancel(timers1); timers1 = nil end
+			gui.set_color(directip, vmath.vector4(1, 1, 1, 1))
+			self.hedefip = ""
+		end)
+		
+	elseif globalonlinetaraf == "client" then
+		gui.set_color(directip, vmath.vector4(0, 1, 0, 1))
+		timerc1 = timer.delay(0.5, true, function()
+			self.ag:sendto("gabagusclientistegi: "..gui.get_text(ownisim), self.hedefip, globalport)
+		end)
+		timerc2 = timer.delay(5, false, function()
+			if timerc2 then timer.cancel(timerc2); timerc2 = nil end
+			gui.set_color(directip, vmath.vector4(1, 1, 1, 1))
+			self.hedefip = ""
+		end)
+	end
+end
+
+function rengikes()
+	if timers1 then timer.cancel(timers1); timers1 = nil end
+	if timers2 then timer.cancel(timers2); timers2 = nil end
+	if timerc1 then timer.cancel(timerc1); timerc1 = nil end
+	if timerc2 then timer.cancel(timerc2); timerc2 = nil end
+	gui.set_color(directip, vmath.vector4(1, 1, 1, 1))
+end
+
+function otemasecimekranigetir(self)
+	if temasecimekranianimasyonda == false then
+		gui.set_position(iceriktnode, vmath.vector3(0, 0, 0))
+		self.scroll_pos = 0
+		self.velocity = 0
+		temasecimekranianimasyonda = true
+		temasecimekraniacikmi = true
+		gui.set_scale(temasecimekraninode, vmath.vector3(0.01,0.01,0))
+		gui.set_position(temasecimekraninode, vmath.vector3(88,163,0))
+		gui.set_enabled(temasecimekraninode, true)
+		gui.animate(temasecimekraninode, gui.PROP_POSITION, vmath.vector3(144,200,0), gui.EASING_LINEAR, 0.15)
+		gui.animate(temasecimekraninode, gui.PROP_SCALE, vmath.vector3(1,1,0), gui.EASING_LINEAR, 0.15,0,
+		function()
+			temasecimekranianimasyonda = false
+		end)
+	end
+end
+
+function otemasecimekranigotur()
+	if temasecimekraniacikmi == true and temasecimekranianimasyonda == false then
+		temasecimekranianimasyonda = true
+		gui.animate(temasecimekraninode, gui.PROP_POSITION, vmath.vector3(88,163,0), gui.EASING_LINEAR, 0.15)
+		gui.animate(temasecimekraninode, gui.PROP_SCALE, vmath.vector3(0.01,0.01,0), gui.EASING_LINEAR, 0.15,0,
+		function()
+			gui.set_enabled(temasecimekraninode, false)
+			gui.set_position(temasecimekraninode, vmath.vector3(-1000,170,0))
+			temasecimekraniacikmi = false
+			temasecimekranianimasyonda = false
+		end)
+	end
+end
+
+function okaraktersecimekranigetir(self)
+	if karaktersecimekranianimasyonda == false then
+		gui.set_position(icerikknode, vmath.vector3(0, 0, 0))
+		self.scroll_pos = 0
+		self.velocity = 0
+		karaktersecimekranianimasyonda = true
+		karaktersecimekraniacikmi = true
+		gui.set_scale(karaktersecimekraninode, vmath.vector3(0.01,0.01,0))
+		gui.set_position(karaktersecimekraninode, vmath.vector3(54,435,0))
+		gui.set_enabled(karaktersecimekraninode, true)
+		gui.animate(karaktersecimekraninode, gui.PROP_POSITION, vmath.vector3(144,200,0), gui.EASING_LINEAR, 0.15)
+		gui.animate(karaktersecimekraninode, gui.PROP_SCALE, vmath.vector3(1,1,0), gui.EASING_LINEAR, 0.15,0,
+		function()
+			karaktersecimekranianimasyonda = false
+		end)
+	end
+end
+
+function okaraktersecimekranigotur()
+	if karaktersecimekraniacikmi == true and karaktersecimekranianimasyonda == false then
+		karaktersecimekranianimasyonda = true
+		gui.animate(karaktersecimekraninode, gui.PROP_POSITION, vmath.vector3(54,435,0), gui.EASING_LINEAR, 0.15)
+		gui.animate(karaktersecimekraninode, gui.PROP_SCALE, vmath.vector3(0.01,0.01,0), gui.EASING_LINEAR, 0.15,0,
+		function()
+			gui.set_enabled(karaktersecimekraninode, false)
+			gui.set_position(karaktersecimekraninode, vmath.vector3(-1000,170,0))
+			karaktersecimekraniacikmi = false
+			karaktersecimekranianimasyonda = false
+		end)
+	end
+end
+
+
+function yayinisleonlinegui(self,gelenip,gelendata)
+	
+	if globalonlinetaraf ~= "server" and string.sub(gelendata,1,21) == "GabagusServerRequest:" then --SERVER DEGILSEK VE GELEN SERVER ISTEGI GECERLİYSE
+		local stringtablo = string.sub(gelendata,23)
+		local tablotablo = tricks.stringdentablo(stringtablo)
+		--tablotablo.ip = gelenip
+		serverdanistek(self,tablotablo)
+	elseif globalonlinetaraf == "server" and string.sub(gelendata,1,22) == "GabagusKatilmaRequest:" then --SERVER ISEK VE GELEN KATILMA ISTEGI GECERLIYSE
+		local stringtablo = string.sub(gelendata,24)
+		local tablotablo = tricks.stringdentablo(stringtablo)
+		--tablotablo.ip = gelenip
+		katilimciisle(self,tablotablo)
+	elseif globalonlinetaraf == "katilimci" and string.sub(gelendata,1,23) == "GabagusKatilmaOnaylandi" then --KATILIMCI ISEK VE GELEN ONAY GECERLIYSE
+		if gelenip == umutlanilanip then
+			local digerkatilimcilartablosu = tricks.stringdentablo(string.sub(gelendata,24))
+			digerkatilimcilariyaz(self,digerkatilimcilartablosu)
+			online2getir()
+		end
+	elseif globalonlinetaraf == "katilimci" and string.sub(gelendata,1,16) == "GabagusYeniAdam:" then --KATILIMCI ISEK VE YENI ADAM GELDIYSE
+		if gelenip == umutlanilanip then
+			local yeniadam = tricks.stringdentablo(string.sub(gelendata,18))
+			yeniadamekle(self,yeniadam)
+		end
+	elseif globalonlinetaraf == "katilimci" and string.sub(gelendata,1,17) == "GabagusYeniBahis:" then --KATILIMCI ISEK VE YENI BAHIS DEGISTIYSE
+		if gelenip == umutlanilanip then
+			local yenibahis = tonumber(string.sub(gelendata,19))
+			bahisdegis(self, yenibahis)
+		end
+	elseif globalonlinetaraf == "server" and gelendata == "GabagusHazirim" then --SERVER ISEK VE BIRISI HAZIR BASMISSA
+		for _, t in ipairs(self.e2data_set) do
+			if t.ip == gelenip then --SINYAL BIZE MI GELIYOR YAV
+				birihazir(self,gelenip)
+				break
+			end
+		end 
+	elseif globalonlinetaraf == "katilimci" and string.sub(gelendata,1,17) == "GabagusBiriHazir:" then --KATILIMCI ISEK VE BIRISI HAZIR BASMISSA
+		birihazirmis(self, string.sub(gelendata,19))
+	elseif globalonlinetaraf == "katilimci" and gelendata == "GabagusBasla" then --KATILIMCI ISEK VE BASLIYORSAK
+		if gelenip == globalkatilimcininserveri.ip then
+			katilimcibasla(self)
+		end
+	else
+		print("anlamsiz veri: "..gelendata)
+	end
+end
+
+function yeniadamekle(self,yeniadam) --KATILIMCININ YENI GELEN KATILIMCIYI GORMESINI SAGLAR
+	for index, value in ipairs(self.e2data_set) do
+		if value.ip == yeniadam.ip then
+			table.remove(self.e2data_set, index)
+		end
+	end
+	table.insert(self.e2data_set, yeniadam)
+	self.e2data_list_vertical:set_data(self.e2data_set)
+end
+
+function digerkatilimcilariyaz(self,tablo) --KATILIMCININ DIGER KATILIMCILARI GORMESI ICINDIR, KATILIMCIDA CALISIR
+
+	--table.insert(self.e2data_set, globalkatilimcininserveri) --SERVERI YAZ
+	
+	--table.insert(self.e2data_set, katilimcininkendisi) --KENDINI YAZ
+
+	if tablo then
+		for _, t in ipairs(tablo) do
+			table.insert(self.e2data_set, t) --DIGERLERINI YAZ (herkesi)
+		end
+	end
+	self.e2data_list_vertical:set_data(self.e2data_set)
+	
+end
+
+function katilimciisle(self, tablo) --SERVERSAK VE KATILMCI GELDIYSE
+
+	if randomid == tablo.umutluid then
+		for i, t in ipairs(self.e2data_set) do --AYNI IP'DEN GELEN BASKA BIR SEY VARSA ILKINI SIL
+			if t.ip == tablo.ip then
+				table.remove(self.e2data_set, i)
+				break
+			end
+		end
+
+
+		local stringtablo = tricks.tablodanstring(tablo)
+		for _, t in ipairs(self.e2data_set) do
+			if t.ip then
+				self.ag:sendto("GabagusYeniAdam: "..stringtablo, t.ip, globalport) --ONAY MESAJI GONDER
+			end
+		end
+
+
+		table.insert(self.e2data_set, tablo) --KATILIMCIYI EKRANA YAZ
+		local yollanacaktablo = tricks.tablodanstring(self.e2data_set)
+		if yollanacaktablo then
+			self.ag:sendto("GabagusKatilmaOnaylandi"..yollanacaktablo, tablo.ip, globalport) --ONAY MESAJI GONDER
+		end
+		self.e2data_list_vertical:set_data(self.e2data_set)
+
+		local min_gcoin = math.huge
+		for _, t in ipairs(self.e2data_set) do
+			if t.gcoin and t.gcoin < min_gcoin then
+				min_gcoin = t.gcoin
+			end
+		end
+		maxbahis = min_gcoin
+		if tonumber(gui.get_text(bahistext)) > maxbahis then
+			bahisdegis(self,maxbahis)
+		end
+	end
+end
+
+function bahisdegis(self,deger)
+	deger = tonumber(deger)
+	if deger < 0 then deger = 0 end
+	gui.set_text(bahistext, deger) --BAHISI DEGIS
+
+	for _, table in pairs(self.e2data_set) do
+		if table.hazir then
+			table.hazir = false
+		end
+	end
+	
+	if globalonlinetaraf == "server" then
+
+		for _, t in ipairs(self.e2data_set) do 
+			if t.ip then
+				self.ag:sendto("GabagusYeniBahis: "..deger, t.ip, globalport) --BAHISI GONDER
+			end
+		end
+	end
+	self.e2data_list_vertical:set_data(self.e2data_set)
+	globalbahis = deger
+end
+
+function serverdanistek(self, tablo) --SERVER DEGILSEK VE SERVERDAN ISTEK ALIYORSAK
+	local device_id = tablo.id
+	-- Zamanlayıcıyı iptal et (varsa)
+	
+	if timerlar[device_id] then
+		timer.cancel(timerlar[device_id])
+	else
+
+	-- Tabloya veriyi ekle
+	table.insert(self.e1data_set, tablo)
+	self.e1data_list_vertical:set_data(self.e1data_set)
+	end
+	-- Yeni zamanlayıcıyı başlat
+	timerlar[device_id] = timer.delay(3, false, function()
+		-- 3 saniye sonra tablodan veriyi sil
+		table.remove(self.e1data_set, idveindex[device_id])
+		self.e1data_list_vertical:set_data(self.e1data_set)
+		timerlar[device_id] = nil
+	end)
+end
+
+function servercilik(self) --SERVER OLMAYA CALISILDIGINDA CALISIR
+	globalonlinetaraf = "server"
+	online2getir()
+	local rs = tricks.randomseedolustur()
+	math.randomseed(rs)
+	splitmix64.randomseed(rs)
+
+	globalownisim = tostring(gui.get_text(ownisim))
+	if string.len(globalownisim) > 8 then globalownisim = "NAME" end
+	globaloyunkarakteri = Kayitci.ktb("k")
+
+	randomid = math.random(1000, 9999)
+	
+	local yayinverileri = {
+		ip = globalownip,
+		isim = globalownisim,
+		karakter = globaloyunkarakteri,
+		tema = globaltema,
+		boruayar = tonumber(kayitci.ktb("b")),
+		randomseed = rs,
+		id = randomid,
+		gcoin = tonumber(gui.get_text(gcoinsayinode))
+	}
+
+	serverinkendisi = yayinverileri
+	local yayinverileristring = tricks.tablodanstring(yayinverileri)
+	if serveryayintimer then timer.cancel(serveryayintimer) end
+	
+	
+	for x = 2, 127 do --BIR KEZ GONDER
+		--local address = "192.168.1." .. tostring(x)
+		self.ag:sendto("GabagusServerRequest: "..yayinverileristring, "192.168.1." .. tostring(x), globalport)
+	end 
+	serveryayintimer = timer.delay(1.5, true, function()
+		for x = 2, 127 do --TEKRARLA
+			--local address = "192.168.1." .. tostring(x)
+			self.ag:sendto("GabagusServerRequest: "..yayinverileristring, "192.168.1." .. tostring(x), globalport)
+		end
+	end)
+	
+	table.insert(self.e2data_set, serverinkendisi) --KENDINI EKRANA YAZ
+	self.e2data_list_vertical:set_data(self.e2data_set)
+end
+
+
+function katilmacilik(self,data)
+	--print("katiliyoz: "..data.ip)
+	umutlanilanip = data.ip
+	globalkatilimcininserveri = data
+	globalonlinetaraf = "katilimci"
+	
+	globalboruhizi = data.boruayar
+	Kayitci.ktb_yaz("b",data.boruayar)
+	globaltema = data.tema
+	
+	local rs = data.randomseed
+	math.randomseed(rs)
+	splitmix64.randomseed(rs)
+
+	globalownisim = tostring(gui.get_text(ownisim))
+	if string.len(globalownisim) > 8 then globalownisim = "NAME" end
+	globaloyunkarakteri = Kayitci.ktb("k")
+	
+	local yayinverileri = {
+		ip = globalownip,
+		isim = globalownisim,
+		karakter = globaloyunkarakteri,
+		id = math.random(1000, 9999),
+		gcoin = tonumber(gui.get_text(gcoinsayinode)),
+		umutluid = data.id
+	}
+	
+	katilimcininkendisi = yayinverileri
+
+	local yayinverileristring = tricks.tablodanstring(yayinverileri)
+	self.ag:sendto("GabagusKatilmaRequest: "..yayinverileristring, data.ip, globalport) --BIR KEZ GONDER
+end
+
+function tablolaritemizle(self)
+	self.e2data_set = {}
+	self.e2data_list_vertical:set_data(self.e2data_set)
+end
+
+function hazirbuton(self) --KATILIMCI BASAR
+	self.ag:sendto("GabagusHazirim", globalkatilimcininserveri.ip, globalport)
+end
+
+function birihazir(self,hazirinip) --SERVER, HAZIR BASANI ISLER
+	for _, t in ipairs(self.e2data_set) do
+		self.ag:sendto("GabagusBiriHazir: "..hazirinip, tostring(t.ip), globalport)
+	end
+	
+	for _, t in ipairs(self.e2data_set) do
+		if t.ip == hazirinip then
+			t.hazir = true
+		end
+	end
+	self.e2data_list_vertical:set_data(self.e2data_set)
+end
+
+function birihazirmis(self,hazirinip) --KATILIMCI, ONAYLANAN HAZIRI ISLER
+	for _, t in ipairs(self.e2data_set) do
+		if t.ip == hazirinip then
+			t.hazir = true
+		end
+	end
+	self.e2data_list_vertical:set_data(self.e2data_set)
+end
+
+function katilimcibasla(self)
+
+	local oyuncular = {}
+	for _, tb1 in pairs(self.e2data_set) do
+		if tb1.ip ~= globalownip then
+			table.insert(oyuncular, tb1)
+			oyuncututucu.katilimciEkle(tb1)
+		end
+	end
+	-- KUMARATORLUK
+
+	Kayitci.eski("gcoin",Kayitci.kaydidondur("gcoin")-globalbahis)
+	globaltoplambahis = globalbahis * (tricks.elemansayisidondur(oyuncular) + 1)
+	
+	------------------------------------------------------------------------------------BASLAT
+	msg.post("#onlinebaslatici", "load")
+	msg.post("#anaekran", "disable")
+	msg.post("#online", "disable")
+	msg.post("#klasikbaslatici", "unload")
+end
+
+function baslabuton(self) --SERVER BASAR
+	--print("baslabuton")
+
+	if herkeshazirmi(self) then
+
+		local oyuncular = {}
+		for index, tbl in ipairs(self.e2data_set) do
+			if index ~= 1 then
+				table.insert(oyuncular, tbl)
+				oyuncututucu.serverEkle(tbl)
+			end
+		end
+		
+		if oyuncututucu.serverDondur() then
+			for _, oyuncu in ipairs(oyuncututucu.serverDondur()) do
+				self.ag:sendto("GabagusBasla", tostring(oyuncu.ip), globalport)
+			end
+		end
+
+		if serveryayintimer then timer.cancel(serveryayintimer) end
+
+		-- KUMARATORLUK
+
+		Kayitci.eski("gcoin",Kayitci.kaydidondur("gcoin")-globalbahis)
+		globaltoplambahis = globalbahis * (tricks.elemansayisidondur(oyuncular) + 1)
+		
+		------------------------------------------------------------------------------------BASLAT
+		msg.post("#onlinebaslatici", "load")
+		msg.post("#anaekran", "disable")
+		msg.post("#online", "disable")
+		msg.post("#klasikbaslatici", "unload")
+
+	else --HERKES HAZIR BASMAMIS
+		--animasyonlandirici.shake(hazirbaslabuton)
+		gui.set_color(hazirbaslabuton, vmath.vector4(0.1,1,0.1,1))
+		timer.delay(0.05, false, function()
+			gui.set_color(hazirbaslabuton, vmath.vector4(1,1,1,1))
+			timer.delay(0.01, false, function()
+				gui.set_color(hazirbaslabuton, vmath.vector4(0.1,1,0.1,1))
+				timer.delay(0.05, false, function()
+					gui.set_color(hazirbaslabuton, vmath.vector4(1,1,1,1))
+				end)
+			end)
+		end)
+	end
+	
+end
+
+function herkeshazirmi(self) --HERKES HAZIRSA TRUE DONDURUR
+
+	local herkeshazirmi = true
+	if #self.e2data_set > 1 then
+		for index, table in ipairs(self.e2data_set) do
+			if index ~= 1 and not table.hazir then
+				herkeshazirmi = false
+				break
+			end
+		end
+	else
+		herkeshazirmi = false
+	end
+
+	return herkeshazirmi
+end
+
+
+
+function on_input(self, action_id, action)
+
+	if not gui.pick_node(ownisim, action.x, action.y) then
+		if Kayitci.dayakyendimi() then gui.hide_keyboard() end
+	end
+	
+	if action_id == hash("touch") and action.pressed then
+		if gui.pick_node(menubutonu, action.x, action.y) then
+			globalonlinetaraf = ""
+			msg.post("#anaekran", "aktiflen")
+			msg.post("#online", "disable")
+		elseif gui.pick_node(ownisim, action.x, action.y) then
+			gui.show_keyboard(gui.KEYBOARD_TYPE_DEFAULT,false)
+			self.message=""
+			yazihedefi = gui.get_node("ownisim")
+			yazihedefistring = "ownisim"
+		elseif gui.pick_node(yaratbuton, action.x, action.y) then
+			print("yarat")
+			if
+			gui.get_text(ownisim) == "" or
+			gui.get_text(ownisim) == " " or
+			gui.get_text(ownisim) == "  " or
+			gui.get_text(ownisim) == "   " or
+			gui.get_text(ownisim) == "    " or
+			gui.get_text(ownisim) == "     " or
+			gui.get_text(ownisim) == "      " or
+			gui.get_text(ownisim) == "       " or
+			gui.get_text(ownisim) == "        "
+			then
+				print("ISIM BOS OLAMAZ")
+				gui.set_text(ownisim, "NAME")
+			end
+			-------------------------------------------- YARAT BUTONU
+			servercilik(self)
+			--self.hedefip = gui.get_text(directip)
+			--renklendir(self)
+			-------------------------------------------- YARAT BUTONU
+		elseif gui.pick_node(katilbuton, action.x, action.y) then
+			if
+			gui.get_text(ownisim) == "" or
+			gui.get_text(ownisim) == " " or
+			gui.get_text(ownisim) == "  " or
+			gui.get_text(ownisim) == "   " or
+			gui.get_text(ownisim) == "    " or
+			gui.get_text(ownisim) == "     " or
+			gui.get_text(ownisim) == "      " or
+			gui.get_text(ownisim) == "       " or
+			gui.get_text(ownisim) == "        "
+			then
+				print("ISIM BOS OLAMAZ")
+				gui.set_text(ownisim, "NAME")
+			end
+			if globalbagliip == "" then
+				globalonlinetaraf = "client"
+				self.hedefip = gui.get_text(directip)
+				renklendir(self)
+			end
+		elseif gui.pick_node(oynabuton, action.x, action.y) then
+			msg.post("#onlinebaslatici", "load")
+			msg.post("#anaekran", "disable")
+			msg.post("#online", "disable")
+			msg.post("#klasikbaslatici", "unload")
+		elseif gui.pick_node(geributon, action.x, action.y) then
+			online2gotur()
+			tablolaritemizle(self)
+			-----------------------------BAHIS BUTONLARI
+		elseif globalonlinetaraf == "server" and gui.pick_node(ke100, action.x, action.y) then
+			local a = tonumber(gui.get_text(bahistext)) - 100
+			if a <= 0 then a = 0 end
+			bahisdegis(self,a)
+		elseif globalonlinetaraf == "server" and gui.pick_node(ke10, action.x, action.y) then
+			local a = tonumber(gui.get_text(bahistext)) - 10
+			if a <= 0 then a = 0 end
+			bahisdegis(self,a)
+		elseif globalonlinetaraf == "server" and gui.pick_node(ke1, action.x, action.y) then
+			local a = tonumber(gui.get_text(bahistext)) - 1
+			if a <= 0 then a = 0 end
+			bahisdegis(self,a)
+		elseif globalonlinetaraf == "server" and gui.pick_node(ka100, action.x, action.y) then
+			local a = tonumber(gui.get_text(bahistext)) + 100
+			if a >= maxbahis then a = maxbahis end
+			bahisdegis(self,a)
+		elseif globalonlinetaraf == "server" and gui.pick_node(ka10, action.x, action.y) then
+			local a = tonumber(gui.get_text(bahistext)) + 10
+			if a >= maxbahis then a = maxbahis end
+			bahisdegis(self,a)
+		elseif globalonlinetaraf == "server" and gui.pick_node(ka1, action.x, action.y) then
+			local a = tonumber(gui.get_text(bahistext)) + 1
+			if a >= maxbahis then a = maxbahis end
+			bahisdegis(self,a)
+			-----------------------------BAHIS BUTONLARI
+			
+		elseif gui.pick_node(hazirbaslabuton, action.x, action.y) then --HAZIR VE BASLA BUTON
+			if globalonlinetaraf == "server" then
+				baslabuton(self)
+			elseif globalonlinetaraf == "katilimci" then
+				hazirbuton(self)
+			else
+				print("biyerde bi yanlis var ama nerde")
+			end
+		end
+	end
+	
+	if action_id == hash("text") then
+		if yazihedefistring == "ownisim" then
+			if string.len(self.message) >= 8 then
+				return
+			end
+		end
+		if string.len(self.message) > 8 then
+			self.message = "NAME"
+		end
+		self.message = self.message .. action.text
+		gui.set_text(yazihedefi, self.message)
+		globalownisim = gui.get_text(ownisim)
+		-- KAYIT ISLEMI
+		kayit.isim = self.message
+		sys.save(kayityeri, kayit)
+	elseif action_id == hash("key_backspace") and action.repeated then
+		local l = string.len(self.message)
+		self.message = string.sub(self.message, 0, l-1)
+		gui.set_text(yazihedefi, self.message)
+		globalownisim = gui.get_text(ownisim)
+	end
+
+	if action_id == hash("touch") and action.pressed then
+		if gui.pick_node(ksecimnode, action.x, action.y) then
+			if karaktersecimekraniacikmi == true then
+				okaraktersecimekranigotur()
+			else
+				otemasecimekranigotur()
+				okaraktersecimekranigetir(self)
+			end
+		elseif gui.pick_node(tsecim, action.x, action.y) and temasecimekraniacikmi == false and karaktersecimekraniacikmi == false then
+			if temasecimekraniacikmi == true then
+				otemasecimekranigotur()
+			else
+				okaraktersecimekranigotur()
+				otemasecimekranigetir(self)
+			end
+		elseif temasecimekraniacikmi == true or karaktersecimekraniacikmi == true then
+			if not (gui.pick_node(temasecimekraninode, action.x, action.y) or
+			gui.pick_node(karaktersecimekraninode, action.x, action.y)) then
+				if temasecimekraniacikmi == true then
+					otemasecimekranigotur()
+				else
+					okaraktersecimekranigotur()
+				end
+			end
+		end
+	end
+	
+	if action_id == hash("touch") and action.pressed and (temasecimekraniacikmi==false and karaktersecimekraniacikmi==false) then
+		if gui.pick_node(sagbuton, action.x, action.y) then
+			local a = gui.get_text(sayitext)
+			a = a + 1
+			if a >= 100 then a = 100 end
+			if a <= 0 then a = 0 end
+			gui.set_text(sayitext, a)
+			Kayitci.ktb_yaz("b", tonumber(gui.get_text(sayitext))/100)
+		elseif gui.pick_node(solbuton, action.x, action.y) then
+			local a = gui.get_text(sayitext)
+			a = a - 1
+			if a >= 100 then a = 100 end
+			if a <= 0 then a = 0 end
+			gui.set_text(sayitext, a)
+			Kayitci.ktb_yaz("b", tonumber(gui.get_text(sayitext))/100)
+		elseif gui.pick_node(sagb10, action.x, action.y) then
+			local a = gui.get_text(sayitext)
+			a = a + 10
+			if a >= 100 then a = 100 end
+			if a <= 0 then a = 0 end
+			gui.set_text(sayitext, a)
+			Kayitci.ktb_yaz("b", tonumber(gui.get_text(sayitext))/100)
+		elseif gui.pick_node(solb10, action.x, action.y) then
+			local a = gui.get_text(sayitext)
+			a = a - 10
+			if a >= 100 then a = 100 end
+			if a <= 0 then a = 0 end
+			gui.set_text(sayitext, a)
+			Kayitci.ktb_yaz("b", tonumber(gui.get_text(sayitext))/100)
+		end
+		
+	end
+	self.odruid:on_input(action_id, action)
+	if not (temasecimekraniacikmi or karaktersecimekraniacikmi) then
+		self.o2druid:on_input(action_id, action)
+	end
+	
+end
+
+function update(self, dt)
+	if not (globalownip == "Wifi acsana") then
+		local data, ip, port = self.ag:receivefrom()
+		if data and not (ip == globalownip) then
+			yayinisleonlinegui(self, ip, data)
+		end
+	end
+	self.odruid:update(dt)
+	self.o2druid:update(dt)
+end
+
+
+local lanetolasitimer
+function bizkapatiyoruz(self)
+	if lanetolasitimer then
+		timer.cancel(lanetolasitimer)
+	end
+	self.bizmikapattik = true
+	lanetolasitimer = timer.delay(1, false, function() self.bizmikapattik=false end)
+end
+
+--[main:/anaekran/go#onlinebaslatici]
+function on_message(self, message_id, message, sender)
+	if message_id == hash("proxy_loaded") then
+		if self.bizmikapattik == true then
+			msg.post("#onlinebaslatici", "enable")
+		else
+			--msg.post("#klasikbaslatici", "unload")
+			msg.post("#onlinebaslatici", "enable")
+		end
+	elseif message_id == hash("herseyikapat") then
+		msg.post("#onlinebaslatici", "unload")
+		resetci(self)
+	elseif message_id == hash("onlinereplay") then
+		msg.post("#onlinebaslatici", "unload")
+		bizkapatiyoruz(self)
+		--print("onlinebaslatici unload edildi")
+		--msg.post("main:/anaekran/go#anaekran", "aktiflenfromonlineoyun")
+	elseif message_id == hash("proxy_unloaded") then
+		if self.bizmikapattik == true then
+			if tonumber(kayitci.kaydidondur("gabag")) < 1 then
+				print("yetersizsinsen")
+			else
+				msg.post("#onlinebaslatici", "load")
+			end
+		end 
+	elseif message_id == hash("boruzamani") then
+		gui.set_text(sayitext, math.ceil(kayitci.ktb("b")*100))
+	elseif message_id == hash("gcoinupdate") then
+		gui.set_text(gcoinsayinode, kayitci.kaydidondur("gcoin"))
+	elseif message_id == hash("resetlen") then
+		resetci(self)
+	elseif message_id == hash("onlinetiklandi") then
+		gui.play_flipbook(ksecimnode, Kayitci.ktb("k"))
+		gui.play_flipbook(gui.get_node("bg1"), Kayitci.ktb("t").."1") --SECIM EKRANINDAKI FLIPBOOKU SECILENLE DEGISTIR
+		gui.play_flipbook(gui.get_node("bg2"), Kayitci.ktb("t").."2")
+		gui.play_flipbook(gui.get_node("bg3"), Kayitci.ktb("t").."3")
+		gui.play_flipbook(gui.get_node("bg4"), Kayitci.ktb("t").."4")
+	end
+	self.odruid:on_message(message_id, message, sender)
+	self.o2druid:on_message(message_id, message, sender)
+end
+
+function final(self)
+	if self.ag then
+		self.ag:close()
+	end
+	msg.post(".", "release_input_focus")
+	self.odruid:final()
+	self.o2druid:final()
+end
+
+
+
+

@@ -1,0 +1,103 @@
+
+local tricks = require("main.modul.tricks")
+
+isdead=false
+local borular = {}
+local yuzdebir
+local karakter
+
+local function spawnboru(tema)
+
+	if not isdead then
+		randomsayi=math.random(200,410)
+		local yeniobje = factory.create("#borufac",vmath.vector3(534,randomsayi,0))
+		table.insert(borular, yeniobje)
+		sprite.play_flipbook(yeniobje, tema.."4")
+	end
+end
+
+function tema(tema)
+	sprite.play_flipbook("bg1", globaltema.."1")
+	sprite.play_flipbook("bg2", globaltema.."2")
+	sprite.play_flipbook("bg3", globaltema.."3")
+	sprite.play_flipbook("zemin", globaltema.."5")
+	if yuzdebir == 4 then
+		local a = Temalar.eg(globaltema)
+		if a == 1 or a == 2 or a == 3 then
+			print("eg, background"..a)
+			sprite.play_flipbook("bg"..a, globaltema..a.."eg")
+		elseif a == 5 then
+			print("eg, zemin")
+			sprite.play_flipbook("zemin", globaltema..a.."eg")
+		end
+	end
+
+	msg.post("bg1", "enable")
+	msg.post("bg2", "enable")
+	msg.post("bg3", "enable") 
+
+	go.animate("bg3", "position.x", go.PLAYBACK_LOOP_FORWARD, -144, go.EASING_LINEAR, 10)
+	go.animate("bg2", "position.x", go.PLAYBACK_LOOP_FORWARD, -144, go.EASING_LINEAR, 60)
+	go.animate("bg1", "position.x", go.PLAYBACK_LOOP_FORWARD, -144, go.EASING_LINEAR, 350)
+	go.animate("zemin", "position.x", go.PLAYBACK_LOOP_FORWARD, -216, go.EASING_LINEAR, 3)
+
+	timer.delay(0.75/(globalboruhizi), true, function() spawnboru(globaltema) end)
+
+end
+
+function boru_animasyonu_durdur()
+	for i, object in ipairs(borular) do
+		go.cancel_animations(object)
+	end
+end
+
+function karaktercilik(a)
+	if a == "globaleuy" then
+		local b = factory.create("#kayrafac",vmath.vector3(100, 272, 1))
+		msg.post(b, "play_animation", {id = hash(globaloyunkarakteri)})
+	end
+end
+
+function on_message(self, message_id, message)
+	if message_id == hash("die") then
+		isdead=true
+		go.cancel_animations("bg1")
+		go.cancel_animations("bg2")
+		go.cancel_animations("bg3")
+		go.cancel_animations("zemin")
+		boru_animasyonu_durdur()
+		msg.post("starter:/go#main", "die")
+		
+	elseif message_id == hash("score+1") then
+		msg.post("starter:/go#main", "score+1")
+	elseif message_id == hash("benisil") then
+		table.remove(borular, 1)
+	end
+	
+	if message_id == hash("globaleuy") then
+		karaktercilik("globaleuy")
+	end
+	
+end
+
+function init(self)
+	math.randomseed(tricks.randomseedolustur())
+	math.random()
+	math.random()
+	math.random()
+	math.random()
+	yuzdebir = math.random(1,100)
+	msg.post("starter:/go#main", "managergeldi")
+	tema(globaltema)
+	msg.post(".", "acquire_input_focus")
+end
+
+
+
+
+
+
+
+
+
+

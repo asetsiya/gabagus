@@ -1,0 +1,17 @@
+--deneylicikgitcilik63
+function yoket()
+	if not isdead then
+		go.delete()
+	end
+end
+
+function init(self)
+	timer.delay(7, false, yoket)
+	go.animate(".", "position.x", go.PLAYBACK_ONCE_FORWARD, -234, go.EASING_LINEAR, 6)
+end 
+
+function on_message(self, message_id, message)
+	if message.other_group == hash("borudedektoru") and message.enter then
+		msg.post("manager", "benisil")
+	end
+end

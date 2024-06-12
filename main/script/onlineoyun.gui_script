@@ -1,0 +1,160 @@
+
+local oyuncututucu = require("main.modul.oyuncututucu")
+local kayitci = require("main.modul.kayitci")
+
+local randomseedtextnode
+local rahmetlitextnode
+local menubutton
+local butonlargeliyor = false
+local oyunbitti = false
+local hazirnode
+
+local otn = {}
+local okn = {}
+local indextutucu = {}
+
+local kazanantextnode
+local paratextnode
+
+function init(self)
+	
+	msg.post(".", "acquire_input_focus")
+	randomseedtextnode = gui.get_node("randomseedtext")
+	rahmetlitextnode = gui.get_node("rahmetlitext")
+	menubutton = gui.get_node("menubuton")
+	hazirnode = gui.get_node("hazir")
+	gui.set_enabled(hazirnode, false)
+	kazanantextnode = gui.get_node("kazanantext")
+	paratextnode = gui.get_node("paratext")
+	gui.set_position(kazanantextnode, vmath.vector3(144,900,0))
+
+	for i = 0, 7 do
+		otn[i] = gui.get_node("oyuncutext"..i)
+		okn[i] = gui.get_node("oyuncukarakter"..i)
+	end
+
+	for i = 0, 7 do
+		gui.set_enabled(otn[i], false)
+		gui.set_enabled(okn[i], false)
+	end
+
+	
+	local cagirilacaktablo
+
+	if globalonlinetaraf == "server" then --HANGI TARAFTAYSAK O TABLOYU SEC
+		cagirilacaktablo = oyuncututucu.serverDondur()
+	elseif globalonlinetaraf == "katilimci" then
+		cagirilacaktablo = oyuncututucu.katilimciDondur()
+	end
+
+	gui.play_flipbook(okn[0], Kayitci.ktb("k")) --ONCE KENDINI EKRANA YAZ
+	gui.set_text(otn[0], globalownisim)
+	gui.set_enabled(okn[0], true)
+	gui.set_enabled(otn[0], true)
+
+	for i, v in ipairs(cagirilacaktablo) do --SONRA DIGERLERINI EKRANA YAZ
+		gui.play_flipbook(okn[i], v.karakter)
+		gui.set_text(otn[i], v.isim)
+		gui.set_enabled(okn[i], true)
+		gui.set_enabled(otn[i], true)
+		indextutucu[v.ip] = i
+	end
+	
+end
+
+function resetonline()
+	gui.set_enabled(hazirnode, false)
+	gui.set_position(rahmetlitextnode, vmath.vector3(145, 700, 0))
+	gui.set_position(menubutton, vmath.vector3(145, -200, 0))
+	oyunbitti = false
+	gui.set_text(gui.get_node("onlinescore"), "0")
+	gui.set_position(kazanantextnode, vmath.vector3(144,900,0))
+	otn = {}
+	okn = {}
+	indextutucu = {}
+	oyuncututucu.resetle()
+end
+
+function butonlarigetir()
+	butonlargeliyor = true
+	gui.animate(rahmetlitextnode, gui.PROP_POSITION, vmath.vector3(145,300,0), gui.EASING_LINEAR, 0.25,0,nil,gui.PLAYBACK_ONCE_FORWARD)
+	gui.animate(menubutton, gui.PROP_POSITION, vmath.vector3(145,117,0), gui.EASING_LINEAR, 0.25,0,function() butonlargeliyor = false end,gui.PLAYBACK_ONCE_FORWARD)
+end
+
+function deathisle(olenip)
+	print("death isle dendi. islemeyecegim ulan!")
+	--[[
+	if olenip == "offline" then
+		gui.set_color(okn[0], vmath.vector4(1,0.2,0.3,1))
+		gui.set_color(otn[0], vmath.vector4(1,0.2,0.3,1))
+	else
+		local a = indextutucu[olenip]
+		b = tostring(a)
+		gui.set_color(gui.get_node("oyuncutext"..b), vmath.vector4(1,0.2,0.3,1))
+		gui.set_color(gui.get_node("oyuncukarakter"..b), vmath.vector4(1,0.2,0.3,1))
+	end
+	--]]
+end
+
+function kazananisle(kazananip)
+	local k
+	local t
+	if kazananip == globalownip then
+		k = okn[0]
+		t = otn[0]
+		kayitci.eski("gcoin", kayitci.kaydidondur("gcoin") + globaltoplambahis)
+	else
+		local a = indextutucu[kazananip]
+		b = tostring(a)
+		k = gui.get_node("oyuncukarakter"..b)
+		t = gui.get_node("oyuncutext"..b)
+	end
+	
+	gui.set_color(t, vmath.vector4(0.2,0.9,0.3,1))
+	gui.set_color(k, vmath.vector4(1,1,1,1))
+
+	gui.set_pivot(t, gui.PIVOT_CENTER)
+
+	local eas = gui.EASING_OUTEXPO
+	gui.animate(t, gui.PROP_POSITION, vmath.vector3(144,245,0), eas, 0.5)
+	gui.animate(t, gui.PROP_SCALE, vmath.vector3(2,2,0), eas, 0.5)
+
+	gui.animate(k, gui.PROP_POSITION, vmath.vector3(144,300,0), eas, 0.5)
+	gui.animate(k, gui.PROP_SCALE, vmath.vector3(1.5,1.5,0), eas, 0.5)
+
+	--gui.animate(kazanantextnode, gui.PROP_POSITION, vmath.vector3(144,400,0), eas, 0.5)
+
+	gui.set_text(paratextnode, tostring(globaltoplambahis))
+	gui.animate(paratextnode, gui.PROP_POSITION, vmath.vector3(144,170,0), eas, 0.5)
+
+	butonlargeliyor = true
+	gui.animate(menubutton, gui.PROP_POSITION, vmath.vector3(144,50,0), gui.EASING_LINEAR, 0.5, 0.9,
+	function() butonlargeliyor = false end)
+
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("basla") then
+		gui.set_enabled(randomseedtextnode, false)
+		resetonline()
+	elseif message_id == hash("score+1") then
+		gui.set_text(gui.get_node("onlinescore"), tostring(tonumber(gui.get_text(gui.get_node("onlinescore")))+1))
+	elseif message_id == hash("biridied") then
+		deathisle(message.ip)
+		print("ui diyor ki bu gitmis:", message.ip)
+	elseif message_id == hash("bitir") then
+		kazananisle(message.sonkey)
+	end
+end
+
+function on_input(self, action_id, action)
+	-- GERI BUTONUNA BASILINCA
+	if action_id == hash("touch") and action.pressed and butonlargeliyor==false then
+		if gui.pick_node(menubutton, action.x, action.y) then
+			resetonline()
+			msg.post("main:/anaekran/go#online", "resetlen")
+			msg.post("main:/anaekran/go#anaekran", "aktiflenfromonlineoyun")
+		end
+	end
+end
+

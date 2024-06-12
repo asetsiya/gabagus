@@ -1,0 +1,72 @@
+
+function init(self)
+	self.acceleration = vmath.vector3(0,-1300,0)
+	self.guc = 400
+	self.velocity = vmath.vector3()
+	self.position = go.get_position()
+	msg.post(".", "acquire_input_focus")
+	isdead=false
+end
+
+function olumlen()
+	msg.post("manager", "die")
+	isdead=true
+end
+
+function on_message(self, message_id, message, sender)
+	if not isdead and not ingui then
+		if message.other_group==hash("ust") then
+			msg.post("#kuscol", "apply_force", {force=vmath.vector3(90, 9000, 0), position=go.get_position()})
+			if not ismuted then sound.play("sesci#smash") end
+			olumlen()
+		elseif message.other_group==hash("boru") or message.other_group==hash("kenar") then
+			msg.post("#kuscol", "apply_force", {force=vmath.vector3(90, -9000, 0), position=go.get_position()})
+			if not ismuted then sound.play("sesci#smash") end
+			olumlen()
+		elseif message.other_group==hash("gecit") and message.enter then
+			msg.post("manager", "score+1")
+			if not ismuted then sound.play("sesci#moneypick") end
+		end
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed and isdead==false then
+		if not ismuted then
+			sound.play("sesci#wing")
+		end
+		self.velocity.y = self.guc
+	end
+end
+
+function update(self, dt)
+	if not isdead then
+		self.velocity = self.velocity + self.acceleration * dt
+		if (self.velocity.y < -365) then
+			self.velocity.y = -365 
+		end
+		self.position = self.position + self.velocity * dt 
+		go.set_position(self.position)
+	else
+		msg.post("#kuscol", "apply_force", {force=vmath.vector3(0, -5344 * dt, 0), position=go.get_position()})
+	end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

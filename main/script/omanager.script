@@ -1,0 +1,229 @@
+
+local tricks = require("main.modul.tricks")
+local oyuncututucu = require("main.modul.oyuncututucu")
+
+local omisdead=false
+local borular = {}
+local yuzdebir
+local karakter
+local doyuncular = {}
+globaloborularsilinsinmi = true
+
+local function spawnboru(tema)
+
+	if not omisdead then
+		randomsayi=splitmix64.random(200,410)
+		local yeniobje = factory.create("#borufac",vmath.vector3(534,randomsayi,0))
+		table.insert(borular, yeniobje)
+		sprite.play_flipbook(yeniobje, tema.."4")
+	end
+end
+
+local function tema(tema)
+	sprite.play_flipbook("bg1", globaltema.."1")
+	sprite.play_flipbook("bg2", globaltema.."2")
+	sprite.play_flipbook("bg3", globaltema.."3")
+	sprite.play_flipbook("zemin", globaltema.."5")
+
+	if yuzdebir == 4 then
+		if not (Temalar.eg(globaltema) == "0") then
+			local a = Temalar.eg(globaltema)
+			print("eg, uu"..a)
+			sprite.play_flipbook("bg"..a, globaltema..a.."eg")
+		end
+	end
+
+	msg.post("bg1", "enable")
+	msg.post("bg2", "enable")
+	msg.post("bg3", "enable") 
+
+	go.animate("bg3", "position.x", go.PLAYBACK_LOOP_FORWARD, -144, go.EASING_LINEAR, 10)
+	go.animate("bg2", "position.x", go.PLAYBACK_LOOP_FORWARD, -144, go.EASING_LINEAR, 60)
+	go.animate("bg1", "position.x", go.PLAYBACK_LOOP_FORWARD, -144, go.EASING_LINEAR, 350)
+	go.animate("zemin", "position.x", go.PLAYBACK_LOOP_FORWARD, -216, go.EASING_LINEAR, 3)
+
+	timer.delay(0.75/(globalboruhizi), true, function() spawnboru(globaltema) end)
+
+end
+
+local function boru_animasyonu_durdur()
+	for i, object in ipairs(borular) do
+		go.cancel_animations(object)
+	end
+	globaloborularsilinsinmi = false
+end
+
+local function karaktercilik(a)
+	if a == "globaleuy" then
+		if globalonlinetaraf == "server" then --SERVER IKEN
+			
+			doyuncular[globalownip] = factory.create("#offlinekayrafac",vmath.vector3(100, 272, 1)) --KENDINI OLUSTUR
+			msg.post(doyuncular[globalownip], "play_animation", {id = hash(Kayitci.ktb("k"))})
+			
+			for i, oyuncu in ipairs(oyuncututucu.serverDondur()) do 
+				doyuncular[oyuncu.ip] = factory.create("#onlinekayrafac",vmath.vector3(100, 272, 0))
+				msg.post(doyuncular[oyuncu.ip], "play_animation", {id = hash(oyuncututucu.serverDondur(i).karakter)})
+				msg.post(doyuncular[oyuncu.ip], "al_sana_ip", {ip = oyuncu.ip})
+			end
+			
+		elseif globalonlinetaraf == "katilimci" then --KATILIMCI IKEN
+			doyuncular[globalownip] = factory.create("#offlinekayrafac",vmath.vector3(100, 272, 1)) --KENDINI OLUSTUR
+			msg.post(doyuncular[globalownip], "play_animation", {id = hash(Kayitci.ktb("k"))})
+
+			for i, oyuncu in ipairs(oyuncututucu.katilimciDondur()) do 
+				doyuncular[oyuncu.ip] = factory.create("#onlinekayrafac",vmath.vector3(100, 272, 0))
+				msg.post(doyuncular[oyuncu.ip], "play_animation", {id = hash(oyuncututucu.katilimciDondur(i).karakter)})
+				msg.post(doyuncular[oyuncu.ip], "al_sana_ip", {ip = oyuncu.ip})
+			end
+		end
+	end
+end
+
+local function omreset()
+	doyuncular = {}
+	borular = {}
+	karakter = nil
+	globalborularsilinsinmi = true
+end
+
+local function ombitir() --OYUNU BITIRIR
+	omisdead=true
+	go.cancel_animations("bg1")
+	go.cancel_animations("bg2")
+	go.cancel_animations("bg3")
+	go.cancel_animations("zemin")
+	boru_animasyonu_durdur()
+	local key, value = next(doyuncular)
+	msg.post("ui#onlineoyun", "bitir", {sonkey = key, sonvalue = value})
+	omreset()
+end
+
+local function offlinezipladi(self,pos)
+	local a = tostring(pos)
+	local tablo = {pos=a,oyuncu=globalownip}
+	local strtablo = tricks.tablodanstring(tablo)
+	
+	if globalonlinetaraf == "server" then
+		
+		for i, oyuncu in ipairs(oyuncututucu.serverDondur()) do
+			self.oo:sendto("GabagusZip"..strtablo, oyuncututucu.serverDondur(i).ip, globalport+1)
+		end
+		
+	elseif globalonlinetaraf == "katilimci" then
+		self.oo:sendto("GabagusZip"..strtablo, globalkatilimcininserveri.ip, globalport+1)
+	end
+end
+
+local function onlinebirigitti(olenkisininip)
+	print("giden: "..olenkisininip)
+	print("giden doyunculardan:", doyuncular[olenkisininip])
+	if doyuncular[olenkisininip] then msg.post(doyuncular[olenkisininip], "olmelisin") end
+	doyuncular[olenkisininip] = nil
+	if tricks.elemansayisidondur(doyuncular) == 1 then
+		ombitir()
+	end
+end
+
+local function omyayinisle(self, ip, data)
+
+	if string.sub(data, 1,10) == "GabagusZip" and omisdead==false then --ZIPLAMA MESAJI ALDIYSAK
+		local strtablo = string.sub(data, 11)
+		local tablo = tricks.stringdentablo(strtablo)
+		
+		if globalonlinetaraf == "server" then --SERVERSAK
+
+			for i, oyuncu in ipairs(oyuncututucu.serverDondur()) do
+				if tostring(ip) ~= oyuncututucu.serverDondur(i).ip then
+					self.oo:sendto("GabagusZip"..strtablo, oyuncututucu.serverDondur(i).ip, globalport+1)
+				end
+			end
+
+			msg.post(doyuncular[tablo.oyuncu], "zipla",{pos=tablo.pos})
+
+		elseif globalonlinetaraf == "katilimci" then --KATILIMCIYSAK
+			msg.post(doyuncular[tablo.oyuncu], "zipla",{pos=tablo.pos})
+		end
+
+	elseif string.sub(data, 1,10) == "GabagusDie" and globalonlinetaraf == "server" then --DIE MESAJI ALDIYSAK
+		for i, oyuncu in ipairs(oyuncututucu.serverDondur()) do
+			self.oo:sendto("GabagusDieFs"..ip, oyuncututucu.serverDondur(i).ip, globalport+1) -- BUTUN KATILIMCILARA SINYAL GONDER
+		end
+		onlinebirigitti(ip)
+	elseif string.sub(data, 1,12) == "GabagusDieFs" then --DIE MESAJI ALDIYSAK
+		local olenkisininip = string.sub(data, 13)
+		if olenkisininip ~= globalownip then
+			onlinebirigitti(olenkisininip)
+		end
+	end
+end
+
+function on_message(self, message_id, message)
+	if message_id == hash("globaleuy") then
+		karaktercilik("globaleuy")
+	elseif message_id == hash("score+1") then
+		msg.post("ui#onlineoyun", "score+1")
+	elseif message_id == hash("benisil") then
+		table.remove(borular, 1)
+	elseif message_id == hash("zipladim") then
+		offlinezipladi(self, message.pos)
+	elseif message_id == hash("bengittim") then
+		birigittiisleyici(self, message)
+	end
+end
+
+function birigittiisleyici(self, message)
+	if omisdead==false then
+		if message.ip == "offline" then
+			if globalonlinetaraf == "server" then
+				for i, oyuncu in ipairs(oyuncututucu.serverDondur()) do -- BUTUN KATILIMCILARA DIE SINYAL GONDER
+					self.oo:sendto("GabagusDieFs"..globalownip, oyuncututucu.serverDondur(i).ip, globalport+1)
+					print("globalownip:", globalownip)
+				end
+				doyuncular[globalownip] = nil
+				if tricks.elemansayisidondur(doyuncular) == 1 then
+					ombitir()
+				end
+			elseif globalonlinetaraf == "katilimci" then
+				self.oo:sendto("GabagusDie", globalkatilimcininserveri.ip, globalport+1) -- SERVERA DIE SINYALI GONDER
+				doyuncular[globalownip] = nil
+				if tricks.elemansayisidondur(doyuncular) == 1 then
+					ombitir()
+				end
+			end
+		end
+		msg.post("ui#onlineoyun", "biridied", message)
+	end
+end
+
+function update(self, dt)
+	local data, ip, port = self.oo:receivefrom()
+	if data and not (ip == globalownip) then
+		omyayinisle(self, ip, data)
+	end
+end
+
+function init(self)
+	self.oo = socket.udp()
+	self.oo:settimeout(0)
+	self.oo:setoption("broadcast", true)
+	self.oo:setsockname(globalownip, globalport + 1)
+	
+	math.randomseed(tricks.randomseedolustur())
+	math.random()
+	math.random()
+	math.random()
+	math.random()
+	yuzdebir = splitmix64.random(1,100)
+	tema(globaltema)
+	karaktercilik("globaleuy")
+end
+
+
+
+
+
+
+
+
+
+
