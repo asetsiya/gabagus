@@ -32,8 +32,8 @@ https://asetsiya.github.io
 - Many characters.
 - Many themes.
 - Pipe frequency adjustment.
-- Parallax
-- Realistic physics for hitting corners
+- Parallax.
+- Realistic physics for hitting corners.
 - Multiplayer mode on LAN! (it was very hard to do)
 - Betting mode for multiplayer.
 
