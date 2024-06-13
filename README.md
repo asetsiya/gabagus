@@ -1,5 +1,5 @@
 
-### Gabagus Game Introduction 🎮
+## Gabagus Game Introduction 🎮
 
 Hello gamers! 🌟 
 
@@ -17,17 +17,16 @@ Join the world of Gabagus now and have endless fun! 🕹️
 
 (this text was written by gpt4o just to be funny)
 
-
-### Play On Browser
 ---
+
+## Play On Browser
 
 https://asetsiya.github.io
 
 (This is just to try it out. Use the android version if you want the real experience.)
 
 
-### Features
----
+## Features
 
 - Standart Flappy Bird features.
 - Many characters.
@@ -39,8 +38,7 @@ https://asetsiya.github.io
 - Betting mode for multiplayer.
 
 
-### Notes
----
+## Notes
 
 Made with the Defold Game Engine.
 
@@ -55,8 +53,7 @@ There are too many things wrong in the code. Also many variable and function nam
 At first I started this project just to learn the Defold Game Engine, but it went much further than I expected and became what it is now. It has some bugs, but I don't think I'll spend any more time to solve them. I finished this project more than a year ago. It was just sitting in my files, useless, and I thought maybe people could use it, so I'm releasing it as open source.
 
 
-### Screenshots
----
+## Screenshots
 
 ![main_menu](https://github.com/asetsiya/gabagus/assets/123804767/a4901144-6564-4a7f-b777-b3b01d9db8b7)
 ![online_gameplay](https://github.com/asetsiya/gabagus/assets/123804767/f5c9bad2-00f3-4270-bb65-62817863fc81)
