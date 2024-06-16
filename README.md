@@ -1,3 +1,5 @@
+![gabagus](https://github.com/asetsiya/gabagus/assets/123804767/00b89f11-a44a-4fda-bfb9-8bb26e21abb9)
+
 
 ## Gabagus Game Introduction 🎮
 
